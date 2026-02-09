@@ -60,4 +60,104 @@ GO
 
 ....
 
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.tables
+    WHERE name = 'transaction_execution_counterparty'
+      AND schema_id = SCHEMA_ID('dbo')
+)
+BEGIN
+    CREATE TABLE dbo.transaction_execution_counterparty (
+        counterparty_id     BIGINT IDENTITY(1,1) NOT NULL,
+        execution_id        VARCHAR(50) NOT NULL,
+
+        counterparty_code   VARCHAR(50),
+        counterparty_name   VARCHAR(100),
+        counterparty_region VARCHAR(50),
+        counterparty_type   VARCHAR(50),
+        customer_acc_type   VARCHAR(50),
+        lei                 VARCHAR(50),
+        is_internal         BIT,
+
+        created_ts          DATETIME2 DEFAULT SYSDATETIME(),
+
+        CONSTRAINT pk_exec_counterparty PRIMARY KEY (counterparty_id),
+        CONSTRAINT fk_counterparty_execution
+            FOREIGN KEY (execution_id)
+            REFERENCES dbo.transaction_execution(execution_id)
+    );
+END
+GO
+
+
+.....
+
+
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.tables
+    WHERE name = 'transaction_user_defined_fields'
+      AND schema_id = SCHEMA_ID('dbo')
+)
+BEGIN
+    CREATE TABLE dbo.transaction_user_defined_fields (
+        udf_id                     BIGINT IDENTITY(1,1) NOT NULL,
+        transaction_id             VARCHAR(50) NOT NULL,
+
+        broker_id                  VARCHAR(50),
+        comments                   VARCHAR(255),
+        event_type                 VARCHAR(50),
+        event_datetime             DATETIME2,
+        message_type               VARCHAR(50),
+
+        root_contract_id            VARCHAR(50),
+        root_order_id               VARCHAR(50),
+        parent_contract_id          VARCHAR(50),
+        parent_order_id             VARCHAR(50),
+
+        original_trade_id           VARCHAR(50),
+        original_ticker             VARCHAR(50),
+
+        package_id                  VARCHAR(50),
+        package_type                VARCHAR(50),
+
+        pre_trade_source_system     VARCHAR(50),
+        pre_trade_system_record_id  VARCHAR(50),
+
+        price                       DECIMAL(18,6),
+        product_type                VARCHAR(50),
+        remark                      VARCHAR(255),
+
+        settlement_amount_currency  CHAR(3),
+        source_system               VARCHAR(50),
+        source_module               VARCHAR(50),
+        sub_entity_type             VARCHAR(50),
+
+        trade_event_effective_date  DATE,
+        trade_id_internal           VARCHAR(50),
+        trader_id                   VARCHAR(50),
+        trading_platform_name       VARCHAR(50),
+        trading_platform_trade_id   VARCHAR(50),
+
+        transaction_day             DATE,
+        unit_book_name              VARCHAR(50),
+        unit_region                 VARCHAR(50),
+        venue_mic                   VARCHAR(10),
+        version                     VARCHAR(20),
+
+        created_ts                  DATETIME2 DEFAULT SYSDATETIME(),
+
+        CONSTRAINT pk_transaction_udf PRIMARY KEY (udf_id),
+        CONSTRAINT fk_udf_transaction
+            FOREIGN KEY (transaction_id)
+            REFERENCES dbo.[transaction](transaction_id)
+    );
+END
+GO
+
+
+.....
+
+
 
