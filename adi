@@ -1,14 +1,91 @@
-CREATE TABLE transaction (
-    transaction_id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    trade_id_internal         VARCHAR(50),
-    type                     VARCHAR(30),
-    extract_date             DATE,
-    transaction_datetime     DATETIME,
-    transaction_day          DATE,
-    unit                     VARCHAR(50),
-    version                  INT,
-    created_at               TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.tables
+    WHERE name = 'sdr_fi_trade'
+      AND schema_id = SCHEMA_ID('dbo')
+)
+BEGIN
+
+CREATE TABLE dbo.sdr_fi_trade (
+
+    /* =========================
+       PRIMARY IDENTIFIERS
+       ========================= */
+    trade_id                    VARCHAR(50) NOT NULL,
+    trade_id_internal           VARCHAR(50),
+    trading_platform_trade_id   VARCHAR(50),
+
+    /* =========================
+       TRANSACTION FIELDS
+       ========================= */
+    txn_type                    VARCHAR(30),
+    txn_extract_date            DATE,
+    txn_datetime                DATETIME2,
+    txn_day                     DATE,
+    txn_status                  VARCHAR(30),
+    version                     INT,
+
+    /* =========================
+       EXECUTION FIELDS
+       ========================= */
+    exec_trade_id               VARCHAR(50),
+    exec_trade_date             DATE,
+    exec_order_start_date       DATE,
+    exec_order_end_date         DATE,
+    exec_order_status           VARCHAR(30),
+    exec_sales_person           VARCHAR(50),
+
+    /* =========================
+       COUNTERPARTY FIELDS
+       ========================= */
+    cp_code                     VARCHAR(30),
+    cp_name                     VARCHAR(100),
+    cp_region                   VARCHAR(50),
+    cp_type                     VARCHAR(50),
+    cp_sub_type                 VARCHAR(50),
+    cp_short_code               VARCHAR(30),
+    cp_customer_acc_type        VARCHAR(30),
+    cp_is_internal              BIT,
+    cp_lei                      VARCHAR(20),
+
+    /* =========================
+       UNIT FIELDS
+       ========================= */
+    unit_type                   VARCHAR(30),
+    unit_book_name              VARCHAR(50),
+    unit_business_unit          VARCHAR(50),
+    unit_region                 VARCHAR(50),
+
+    /* =========================
+       USER DEFINED FIELDS (UDF)
+       ========================= */
+    udf_message_type            VARCHAR(30),
+    udf_event_type              VARCHAR(30),
+    udf_event_datetime          DATETIME2,
+    udf_trade_effective_date    DATE,
+    udf_price                   DECIMAL(18,6),
+    udf_product_type            VARCHAR(50),
+    udf_notional_amount         DECIMAL(18,2),
+    udf_currency                CHAR(3),
+    udf_settlement_currency     CHAR(3),
+    udf_set_number              INT,
+    udf_broker_id               VARCHAR(50),
+    udf_trader_id               VARCHAR(50),
+    udf_comments                VARCHAR(255),
+    udf_source_system           VARCHAR(30),
+    udf_source_module           VARCHAR(30),
+    udf_pre_trade_source        VARCHAR(30),
+    udf_pre_trade_record_id     VARCHAR(50),
+
+    /* =========================
+       AUDIT COLUMNS
+       ========================= */
+    source_system               VARCHAR(30),
+    load_ts                     DATETIME2 DEFAULT SYSDATETIME(),
+
+    CONSTRAINT pk_sdr_fi_trade PRIMARY KEY (trade_id)
+
 );
 
-
-...
+END;
+GO
