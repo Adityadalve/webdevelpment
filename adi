@@ -1,125 +1,24 @@
--- =========================================================
--- STAGING TABLE : RAW FI BOND TRADE DATA
--- =========================================================
-CREATE TABLE IF NOT EXISTS stg_fi_bond_trade (
-    trade_id            VARCHAR(50),
-    product_type        VARCHAR(30),
-    isin                VARCHAR(12),
-    notional            DECIMAL(18,2),
-    currency            CHAR(3),
-    price               DECIMAL(18,6),
-    trade_date          TIMESTAMP,
-    settlement_date     TIMESTAMP,
-    source_system       VARCHAR(30),
-    ingestion_ts        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+USE T_Hub;
+GO
 
-
--- =========================================================
--- SDR TABLE : STANDARDIZED FI BOND TRADE
--- =========================================================
-CREATE TABLE IF NOT EXISTS sdr_fi_bond_trade (
-    trade_id            VARCHAR(50) NOT NULL,
-    product_type        VARCHAR(30),
-    isin                VARCHAR(12),
-    notional_amount     DECIMAL(18,2),
-    currency            CHAR(3),
-    price               DECIMAL(18,6),
-    trade_date          DATE,
-    settlement_date     DATE,
-    source_system       VARCHAR(30),
-    load_ts             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_sdr_fi_bond_trade PRIMARY KEY (trade_id)
-);
-
--- =========================================================
--- INDEXES FOR QUERY PERFORMANCE
--- =========================================================
-CREATE INDEX IF NOT EXISTS idx_sdr_fi_bond_isin
-ON sdr_fi_bond_trade (isin);
-
-CREATE INDEX IF NOT EXISTS idx_sdr_fi_bond_trade_date
-ON sdr_fi_bond_trade (trade_date);
-
--- =========================================================
--- MERGE FROM STAGING TO SDR
--- =========================================================
-MERGE INTO sdr_fi_bond_trade tgt
-USING stg_fi_bond_trade src
-ON tgt.trade_id = src.trade_id
-
-WHEN MATCHED THEN
-UPDATE SET
-    product_type      = src.product_type,
-    isin              = src.isin,
-    notional_amount   = src.notional,
-    currency           = src.currency,
-    price             = src.price,
-    trade_date        = CAST(src.trade_date AS DATE),
-    settlement_date   = CAST(src.settlement_date AS DATE),
-    source_system     = src.source_system,
-    load_ts           = CURRENT_TIMESTAMP
-
-WHEN NOT MATCHED THEN
-INSERT (
-    trade_id,
-    product_type,
-    isin,
-    notional_amount,
-    currency,
-    price,
-    trade_date,
-    settlement_date,
-    source_system
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.tables
+    WHERE name = 'stg_fi_bond_trade'
+      AND schema_id = SCHEMA_ID('dbo')
 )
-VALUES (
-    src.trade_id,
-    src.product_type,
-    src.isin,
-    src.notional,
-    src.currency,
-    src.price,
-    CAST(src.trade_date AS DATE),
-    CAST(src.settlement_date AS DATE),
-    src.source_system
-);
-
--- Table exists check
-SELECT COUNT(*) FROM sdr_fi_bond_trade;
-
--- Primary key validation
-SELECT trade_id, COUNT(*)
-FROM sdr_fi_bond_trade
-GROUP BY trade_id
-HAVING COUNT(*) > 1;
-
--- Null check on mandatory field
-SELECT *
-FROM sdr_fi_bond_trade
-WHERE trade_id IS NULL;
-
--- Date sanity check
-SELECT *
-FROM sdr_fi_bond_trade
-WHERE settlement_date < trade_date;
-
-/* =========================================================
-REVERSE MAPPING : SDR → STAGING → SOURCE
-===========================================================
-
-SDR TABLE: sdr_fi_bond_trade
-
-| SDR Column        | Staging Column        | Source System | Transformation |
-|------------------|----------------------|---------------|----------------|
-| trade_id         | trade_id             | VSO           | Direct |
-| product_type     | product_type         | VSO           | Direct |
-| isin             | isin                 | VSO           | Direct |
-| notional_amount  | notional             | VSO           | Renamed |
-| currency          | currency             | VSO           | Direct |
-| price            | price                | VSO           | Direct |
-| trade_date       | trade_date           | VSO           | CAST to DATE |
-| settlement_date  | settlement_date      | VSO           | CAST to DATE |
-| source_system    | source_system        | VSO           | Direct |
-| load_ts          | system_generated     | SDR           | Default timestamp |
-
-=========================================================== */
+BEGIN
+    CREATE TABLE dbo.stg_fi_bond_trade (
+        trade_id         VARCHAR(50),
+        product_type     VARCHAR(30),
+        isin             VARCHAR(12),
+        notional         DECIMAL(18,2),
+        currency          CHAR(3),
+        price            DECIMAL(18,6),
+        trade_date       DATETIME2,
+        settlement_date  DATETIME2,
+        source_system    VARCHAR(30),
+        ingestion_ts     DATETIME2 DEFAULT SYSDATETIME()
+    );
+END;
+GO
