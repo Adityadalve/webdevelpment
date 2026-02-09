@@ -1,87 +1,14 @@
-USE T_Hub;
-GO
-
-INSERT INTO dbo.stg_fi_bond_trade (
-    trade_id,
-    product_type,
-    isin,
-    notional,
-    currency,
-    price,
-    trade_date,
-    settlement_date,
-    source_system
-)
-VALUES
-('T001','BOND','US000000001',1000000,'USD',99.125,'2026-01-01','2026-01-03','VSO'),
-('T002','BOND','US000000002',2000000,'USD',101.250,'2026-01-02','2026-01-04','VSO'),
-('T003','BOND','US000000003',1500000,'EUR',98.875,'2026-01-03','2026-01-05','VSO'),
-('T004','BOND','US000000004',1750000,'EUR',100.500,'2026-01-04','2026-01-06','VSO'),
-('T005','BOND','US000000005',3000000,'GBP',97.650,'2026-01-05','2026-01-07','VSO'),
-('T006','BOND','US000000006',1200000,'GBP',99.950,'2026-01-06','2026-01-08','VSO'),
-('T007','BOND','US000000007',2500000,'JPY',100.125,'2026-01-07','2026-01-09','VSO'),
-('T008','BOND','US000000008',1800000,'JPY',101.875,'2026-01-08','2026-01-10','VSO'),
-('T009','BOND','US000000009',2200000,'USD',98.250,'2026-01-09','2026-01-11','VSO'),
-('T010','BOND','US000000010',1600000,'USD',102.300,'2026-01-10','2026-01-12','VSO');
-GO
-
-....
-
-MERGE dbo.sdr_fi_bond_trade AS tgt
-USING dbo.stg_fi_bond_trade AS src
-ON tgt.trade_id = src.trade_id
-
-WHEN MATCHED THEN
-UPDATE SET
-    product_type     = src.product_type,
-    isin             = src.isin,
-    notional_amount  = src.notional,
-    currency          = src.currency,
-    price            = src.price,
-    trade_date       = CAST(src.trade_date AS DATE),
-    settlement_date  = CAST(src.settlement_date AS DATE),
-    source_system    = src.source_system,
-    load_ts          = SYSDATETIME()
-
-WHEN NOT MATCHED THEN
-INSERT (
-    trade_id,
-    product_type,
-    isin,
-    notional_amount,
-    currency,
-    price,
-    trade_date,
-    settlement_date,
-    source_system
-)
-VALUES (
-    src.trade_id,
-    src.product_type,
-    src.isin,
-    src.notional,
-    src.currency,
-    src.price,
-    CAST(src.trade_date AS DATE),
-    CAST(src.settlement_date AS DATE),
-    src.source_system
+CREATE TABLE transaction (
+    transaction_id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    trade_id_internal         VARCHAR(50),
+    type                     VARCHAR(30),
+    extract_date             DATE,
+    transaction_datetime     DATETIME,
+    transaction_day          DATE,
+    unit                     VARCHAR(50),
+    version                  INT,
+    created_at               TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-GO
-....
 
--- Staging count
-SELECT COUNT(*) AS stg_count
-FROM dbo.stg_fi_bond_trade;
-
--- SDR count
-SELECT COUNT(*) AS sdr_count
-FROM dbo.sdr_fi_bond_trade;
-
-...
-
-SELECT trade_id, COUNT(*) AS cnt
-FROM dbo.sdr_fi_bond_trade
-GROUP BY trade_id
-HAVING COUNT(*) > 1;
 
 ...
