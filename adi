@@ -1,91 +1,120 @@
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.tables
-    WHERE name = 'sdr_fi_trade'
-      AND schema_id = SCHEMA_ID('dbo')
-)
-BEGIN
+CREATE TABLE IF NOT EXISTS transaction (
+    transaction_id        VARCHAR(50) NOT NULL,
+    type                  VARCHAR(30),
+    extract_date           DATE,
+    transaction_datetime   DATETIME,
+    unit                  VARCHAR(30),
 
-CREATE TABLE dbo.sdr_fi_trade (
+    created_ts             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_ts             TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                             ON UPDATE CURRENT_TIMESTAMP,
 
-    /* =========================
-       PRIMARY IDENTIFIERS
-       ========================= */
-    trade_id                    VARCHAR(50) NOT NULL,
-    trade_id_internal           VARCHAR(50),
-    trading_platform_trade_id   VARCHAR(50),
-
-    /* =========================
-       TRANSACTION FIELDS
-       ========================= */
-    txn_type                    VARCHAR(30),
-    txn_extract_date            DATE,
-    txn_datetime                DATETIME2,
-    txn_day                     DATE,
-    txn_status                  VARCHAR(30),
-    version                     INT,
-
-    /* =========================
-       EXECUTION FIELDS
-       ========================= */
-    exec_trade_id               VARCHAR(50),
-    exec_trade_date             DATE,
-    exec_order_start_date       DATE,
-    exec_order_end_date         DATE,
-    exec_order_status           VARCHAR(30),
-    exec_sales_person           VARCHAR(50),
-
-    /* =========================
-       COUNTERPARTY FIELDS
-       ========================= */
-    cp_code                     VARCHAR(30),
-    cp_name                     VARCHAR(100),
-    cp_region                   VARCHAR(50),
-    cp_type                     VARCHAR(50),
-    cp_sub_type                 VARCHAR(50),
-    cp_short_code               VARCHAR(30),
-    cp_customer_acc_type        VARCHAR(30),
-    cp_is_internal              BIT,
-    cp_lei                      VARCHAR(20),
-
-    /* =========================
-       UNIT FIELDS
-       ========================= */
-    unit_type                   VARCHAR(30),
-    unit_book_name              VARCHAR(50),
-    unit_business_unit          VARCHAR(50),
-    unit_region                 VARCHAR(50),
-
-    /* =========================
-       USER DEFINED FIELDS (UDF)
-       ========================= */
-    udf_message_type            VARCHAR(30),
-    udf_event_type              VARCHAR(30),
-    udf_event_datetime          DATETIME2,
-    udf_trade_effective_date    DATE,
-    udf_price                   DECIMAL(18,6),
-    udf_product_type            VARCHAR(50),
-    udf_notional_amount         DECIMAL(18,2),
-    udf_currency                CHAR(3),
-    udf_settlement_currency     CHAR(3),
-    udf_set_number              INT,
-    udf_broker_id               VARCHAR(50),
-    udf_trader_id               VARCHAR(50),
-    udf_comments                VARCHAR(255),
-    udf_source_system           VARCHAR(30),
-    udf_source_module           VARCHAR(30),
-    udf_pre_trade_source        VARCHAR(30),
-    udf_pre_trade_record_id     VARCHAR(50),
-
-    /* =========================
-       AUDIT COLUMNS
-       ========================= */
-    source_system               VARCHAR(30),
-    load_ts                     DATETIME2 DEFAULT SYSDATETIME(),
-
-    CONSTRAINT pk_sdr_fi_trade PRIMARY KEY (trade_id)
-
+    CONSTRAINT pk_transaction PRIMARY KEY (transaction_id)
 );
 
-END;
-GO
+.....
+
+CREATE TABLE IF NOT EXISTS transaction_execution (
+    execution_id       VARCHAR(50) NOT NULL,
+    transaction_id     VARCHAR(50) NOT NULL,
+
+    trade_id            VARCHAR(50),
+    trade_date          DATE,
+    order_start_date    DATE,
+    order_end_date      DATE,
+    order_status        VARCHAR(30),
+    package_trade_id    VARCHAR(50),
+    sales_person        VARCHAR(50),
+    trader_id           VARCHAR(50),
+    trade_status        VARCHAR(30),
+
+    created_ts          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_ts          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                          ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_transaction_execution PRIMARY KEY (execution_id),
+    CONSTRAINT fk_exec_transaction
+        FOREIGN KEY (transaction_id)
+        REFERENCES transaction(transaction_id)
+);
+
+
+.....
+
+CREATE TABLE IF NOT EXISTS transaction_execution_counterparty (
+    counterparty_id     BIGINT AUTO_INCREMENT,
+    execution_id        VARCHAR(50) NOT NULL,
+
+    counterparty_code   VARCHAR(50),
+    counterparty_name   VARCHAR(100),
+    counterparty_region VARCHAR(50),
+    counterparty_type   VARCHAR(50),
+    customer_acc_type   VARCHAR(50),
+    lei                 VARCHAR(50),
+    is_internal         BOOLEAN,
+
+    created_ts          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_exec_counterparty PRIMARY KEY (counterparty_id),
+    CONSTRAINT fk_counterparty_execution
+        FOREIGN KEY (execution_id)
+        REFERENCES transaction_execution(execution_id)
+);
+
+
+.....
+
+CREATE TABLE IF NOT EXISTS transaction_user_defined_fields (
+    udf_id                     BIGINT AUTO_INCREMENT,
+    transaction_id             VARCHAR(50) NOT NULL,
+
+    broker_id                  VARCHAR(50),
+    comments                   VARCHAR(255),
+    event_type                 VARCHAR(50),
+    event_datetime             DATETIME,
+    message_type               VARCHAR(50),
+
+    root_contract_id            VARCHAR(50),
+    root_order_id               VARCHAR(50),
+    parent_contract_id          VARCHAR(50),
+    parent_order_id             VARCHAR(50),
+
+    original_trade_id           VARCHAR(50),
+    original_ticker             VARCHAR(50),
+
+    package_id                  VARCHAR(50),
+    package_type                VARCHAR(50),
+
+    pre_trade_source_system     VARCHAR(50),
+    pre_trade_system_record_id  VARCHAR(50),
+
+    price                       DECIMAL(18,6),
+    product_type                VARCHAR(50),
+    remark                      VARCHAR(255),
+
+    settlement_amount_currency  CHAR(3),
+    source_system               VARCHAR(50),
+    source_module               VARCHAR(50),
+    sub_entity_type             VARCHAR(50),
+
+    trade_event_effective_date  DATE,
+    trade_id_internal           VARCHAR(50),
+    trader_id                   VARCHAR(50),
+    trading_platform_name       VARCHAR(50),
+    trading_platform_trade_id  VARCHAR(50),
+
+    transaction_day             DATE,
+    unit_book_name              VARCHAR(50),
+    unit_region                 VARCHAR(50),
+    venue_mic                   VARCHAR(10),
+    version                     VARCHAR(20),
+
+    created_ts                  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_transaction_udf PRIMARY KEY (udf_id),
+    CONSTRAINT fk_udf_transaction
+        FOREIGN KEY (transaction_id)
+        REFERENCES transaction(transaction_id)
+);
+
+...
