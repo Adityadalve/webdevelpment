@@ -22,3 +22,77 @@ BEGIN
     );
 END;
 GO
+
+
+USE T_Hub;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.tables
+    WHERE name = 'sdr_fi_bond_trade'
+      AND schema_id = SCHEMA_ID('dbo')
+)
+BEGIN
+    CREATE TABLE dbo.sdr_fi_bond_trade (
+        trade_id          VARCHAR(50) NOT NULL,
+        product_type      VARCHAR(30),
+        isin              VARCHAR(12),
+        notional_amount   DECIMAL(18,2),
+        currency           CHAR(3),
+        price             DECIMAL(18,6),
+        trade_date        DATE,
+        settlement_date   DATE,
+        source_system     VARCHAR(30),
+        load_ts           DATETIME2 DEFAULT SYSDATETIME(),
+        CONSTRAINT pk_sdr_fi_bond_trade PRIMARY KEY (trade_id)
+    );
+END;
+GO
+
+...
+
+
+MERGE dbo.sdr_fi_bond_trade AS tgt
+USING dbo.stg_fi_bond_trade AS src
+ON tgt.trade_id = src.trade_id
+
+WHEN MATCHED THEN
+UPDATE SET
+    product_type     = src.product_type,
+    isin             = src.isin,
+    notional_amount  = src.notional,
+    currency          = src.currency,
+    price            = src.price,
+    trade_date       = CAST(src.trade_date AS DATE),
+    settlement_date  = CAST(src.settlement_date AS DATE),
+    source_system    = src.source_system,
+    load_ts          = SYSDATETIME()
+
+WHEN NOT MATCHED THEN
+INSERT (
+    trade_id,
+    product_type,
+    isin,
+    notional_amount,
+    currency,
+    price,
+    trade_date,
+    settlement_date,
+    source_system
+)
+VALUES (
+    src.trade_id,
+    src.product_type,
+    src.isin,
+    src.notional,
+    src.currency,
+    src.price,
+    CAST(src.trade_date AS DATE),
+    CAST(src.settlement_date AS DATE),
+    src.source_system
+);
+GO
+
+
+.....
