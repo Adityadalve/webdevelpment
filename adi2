@@ -1,12 +1,6 @@
-IF NOT EXISTS (
-    SELECT 1 
-    FROM sys.foreign_keys 
-    WHERE name = 'fk_exec_transaction'
-)
-BEGIN
-    ALTER TABLE dbo.transaction_Execution
-    ADD CONSTRAINT fk_exec_transaction
-    FOREIGN KEY (transaction_id)
-    REFERENCES dbo.[transaction](transaction_id);
-END
-GO
+<mirror>
+    <id>maven-default-http-blocker</id>
+    <mirrorOf>external:http:*</mirrorOf>
+    <url>http://0.0.0.0/</url>
+    <blocked>true</blocked>
+</mirror>
