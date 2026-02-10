@@ -1,7 +1,12 @@
-SELECT
-    s.name AS schema_name,
-    t.name AS table_name
-FROM sys.tables t
-JOIN sys.schemas s
-    ON t.schema_id = s.schema_id
-WHERE t.name LIKE 'transaction%';
+IF NOT EXISTS (
+    SELECT 1 
+    FROM sys.foreign_keys 
+    WHERE name = 'fk_exec_transaction'
+)
+BEGIN
+    ALTER TABLE dbo.transaction_Execution
+    ADD CONSTRAINT fk_exec_transaction
+    FOREIGN KEY (transaction_id)
+    REFERENCES dbo.[transaction](transaction_id);
+END
+GO
