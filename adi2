@@ -1,29 +1,29 @@
-INSERT INTO dbo.[transaction]
-(
-    [type],
-    extractDate,
-    transactionDateTime,
-    [unit]
-)
-VALUES
-('EQUITY', '2026-01-01', '2026-01-01 09:15:00', 'UNIT_A'),
-('EQUITY', '2026-01-01', '2026-01-01 09:30:00', 'UNIT_A'),
-('FX',     '2026-01-02', '2026-01-02 10:00:00', 'UNIT_B'),
-('FX',     '2026-01-02', '2026-01-02 10:45:00', 'UNIT_B'),
-('BOND',   '2026-01-03', '2026-01-03 11:00:00', 'UNIT_C'),
-('BOND',   '2026-01-03', '2026-01-03 11:30:00', 'UNIT_C'),
-('EQUITY', '2026-01-04', '2026-01-04 12:00:00', 'UNIT_A'),
-('FX',     '2026-01-04', '2026-01-04 12:30:00', 'UNIT_B'),
-('DERIV',  '2026-01-05', '2026-01-05 13:00:00', 'UNIT_D'),
-('DERIV',  '2026-01-05', '2026-01-05 13:45:00', 'UNIT_D'),
+V1.0.2.14__TRANSACTION.sql
 
-('EQUITY', '2026-01-06', '2026-01-06 14:00:00', 'UNIT_A'),
-('FX',     '2026-01-06', '2026-01-06 14:30:00', 'UNIT_B'),
-('BOND',   '2026-01-07', '2026-01-07 15:00:00', 'UNIT_C'),
-('BOND',   '2026-01-07', '2026-01-07 15:30:00', 'UNIT_C'),
-('DERIV',  '2026-01-08', '2026-01-08 16:00:00', 'UNIT_D'),
-('DERIV',  '2026-01-08', '2026-01-08 16:30:00', 'UNIT_D'),
-('EQUITY', '2026-01-09', '2026-01-09 17:00:00', 'UNIT_A'),
-('FX',     '2026-01-09', '2026-01-09 17:30:00', 'UNIT_B'),
-('BOND',   '2026-01-10', '2026-01-10 18:00:00', 'UNIT_C'),
-('DERIV',  '2026-01-10', '2026-01-10 18:30:00', 'UNIT_D');
+
+IF OBJECT_ID('dbo.[transaction]', 'U') IS NOT NULL
+BEGIN
+    PRINT 'transaction table exists';
+END
+ELSE
+BEGIN
+    PRINT 'transaction table is created';
+
+    DROP TABLE IF EXISTS dbo.[transaction];
+
+    CREATE TABLE dbo.[transaction]
+    (
+        transaction_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
+        [type]                VARCHAR(255),
+        extractDate           DATE,
+        transactionDateTime   DATETIME2,
+        unit                  VARCHAR(255),
+
+        created_ts            DATETIME2 DEFAULT SYSDATETIME(),
+        updated_ts            DATETIME2 DEFAULT SYSDATETIME()
+    );
+END
+
+SELECT * 
+FROM flyway_schema_history
+ORDER BY installed_rank DESC;
