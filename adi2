@@ -1,29 +1,58 @@
-V1.0.2.14__TRANSACTION.sql
+{
+  "application": "transition",
+  "stream": "etl",
+  "type": "pipe",
+  "id": "transition_staging_read_pipe",
+  "map": {
+    "classname": "com.tds.coalesce.commons.connectors.jdbc.pipe.PipeDbQueryToListOfJson",
+    "context_json": "transition_staging_result",
+    "connection_id": "cmply_azure_sqlserver_connection",
+    "encoded_query": "encodeBase64File(sql/transition/transition_staging_read.sql)",
+    "parameters": []
+  }
+}
 
 
-IF OBJECT_ID('dbo.[transaction]', 'U') IS NOT NULL
-BEGIN
-    PRINT 'transaction table exists';
-END
-ELSE
-BEGIN
-    PRINT 'transaction table is created';
 
-    DROP TABLE IF EXISTS dbo.[transaction];
 
-    CREATE TABLE dbo.[transaction]
-    (
-        transaction_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
-        [type]                VARCHAR(255),
-        extractDate           DATE,
-        transactionDateTime   DATETIME2,
-        unit                  VARCHAR(255),
+{
+  "application": "transition",
+  "stream": "etl",
+  "type": "pipe",
+  "id": "transition_final_insert_pipe",
+  "map": {
+    "classname": "com.tds.coalesce.commons.connectors.jdbc.pipe.PipeDbBatchInsertFromJson",
+    "connection_id": "cmply_azure_sqlserver_connection",
+    "source_context": "transition_staging_result",
+    "encoded_query": "encodeBase64File(sql/transition/transition_final_insert.sql)"
+  }
+}
 
-        created_ts            DATETIME2 DEFAULT SYSDATETIME(),
-        updated_ts            DATETIME2 DEFAULT SYSDATETIME()
-    );
-END
 
-SELECT * 
-FROM flyway_schema_history
-ORDER BY installed_rank DESC;
+
+
+{
+  "application": "transition",
+  "stream": "etl",
+  "type": "pipeline",
+  "id": "transition_staging_to_final_pipeline",
+  "map": {
+    "classname": "com.tds.coalesce.commons.pipeline.Pipeline",
+    "interface_engine": {
+      "classname": "com.tds.coalesce.commons.pipeline.engine.PipelineEngineBase",
+      "interface_lock": {
+        "classname": "com.tds.coalesce.commons.pipeline.lock.PipelineNonLocking"
+      }
+    },
+    "pipeline": [
+      {
+        "pipe_id": "transition_staging_read_pipe"
+      },
+      {
+        "pipe_id": "transition_final_insert_pipe"
+      }
+    ]
+  }
+}
+
+
