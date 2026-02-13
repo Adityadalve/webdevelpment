@@ -56,3 +56,51 @@
 }
 
 
+
+
+transition_staging_to_final_pipeline
+
+
+
+{
+  "application": "transition",
+  "stream": "etl",
+  "type": "endpoint",
+  "id": "transition_staging_to_final_endpoint",
+  "map": {
+    "classname": "com.tds.coalesce.commons.service.spring.rest.endpoint.adapter.RESTEndpointAdapter",
+    "url": "/transition/process",
+    "methods_http": [
+      "POST"
+    ],
+
+    "handler_request": [],
+
+    "pipeline": "transition_staging_to_final_pipeline",
+    "pipeline_exception": "transition_staging_to_final_pipeline_exception",
+
+    "throw_pipeline_return": "true",
+
+    "handler_response": [
+      {
+        "classname": "com.tds.coalesce.commons.service.spring.rest.endpoint.response.RESTGenericResponseUsingJsonObject",
+        "id": "transition_success_response",
+        "context_model": "transition_pipeline_response_context"
+      }
+    ],
+
+    "handler_error": {
+      "classname": "com.tds.coalesce.commons.service.spring.rest.endpoint.response.RESTResponseErrorUsingJsonObject",
+      "json_template": {
+        "classname": "com.tds.coalesce.commons.connectors.http.pipe.response.TemplateStringEncodedHelper",
+        "template_string_encoded": "encodeBase64File(data/transition/transition_error_response_template.json)"
+      },
+      "context_json": "transition_pipeline_error_context"
+    }
+  }
+}
+
+
+
+
+
