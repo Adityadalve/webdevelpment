@@ -1,106 +1,100 @@
-{
-  "application": "transition",
-  "stream": "etl",
-  "type": "pipe",
-  "id": "transition_staging_read_pipe",
-  "map": {
-    "classname": "com.tds.coalesce.commons.connectors.jdbc.pipe.PipeDbQueryToListOfJson",
-    "context_json": "transition_staging_result",
-    "connection_id": "cmply_azure_sqlserver_connection",
-    "encoded_query": "encodeBase64File(sql/transition/transition_staging_read.sql)",
-    "parameters": []
-  }
-}
+SELECT
+    -- Direct mappings
+    UnitBookName,
+    CounterpartyCode,
+    ProductType,
+    SalesPersonID,
+    SourceSystem,
 
+    /* ============================
+       TradeDate Logic
+       ============================
+       If eventType = '1.1 Inception:NewTrade'
+         → use tradeExecutionDateTime if present
+         → else recordEffectiveTime
+       Else
+         → recordEffectiveTime
+    */
+    CASE
+        WHEN EventType = '1.1 Inception:NewTrade'
+             AND TradeExecutionDateTime IS NOT NULL
+            THEN TradeExecutionDateTime
+        ELSE RecordEffectiveTime
+    END AS TradeDate,
 
+    TradeID,
+    TraderID,
+    PackageID,
 
+    -- Message / Event
+    MessageType,
+    EventType,
 
-{
-  "application": "transition",
-  "stream": "etl",
-  "type": "pipe",
-  "id": "transition_final_insert_pipe",
-  "map": {
-    "classname": "com.tds.coalesce.commons.connectors.jdbc.pipe.PipeDbBatchInsertFromJson",
-    "connection_id": "cmply_azure_sqlserver_connection",
-    "source_context": "transition_staging_result",
-    "encoded_query": "encodeBase64File(sql/transition/transition_final_insert.sql)"
-  }
-}
+    /* ============================
+       AssetClass Logic
+       ============================
+       productType = 'FX_Spot'
+       → 'Foreign Exchange (FX)'
+    */
+    CASE
+        WHEN ProductType = 'FX_Spot'
+            THEN 'Foreign Exchange (FX)'
+        ELSE ProductType
+    END AS AssetClass,
 
+    /* ============================
+       CurrencyPairBaseCurrency Logic
+       ============================
+       If first part of exchangeRateQuoteBasis = buyCurrency
+         → buyCurrency
+       Else
+         → 0
+    */
+    CASE
+        WHEN LEFT(ExchangeRateQuoteBasis,
+                  CHARINDEX('/', ExchangeRateQuoteBasis + '/') - 1)
+             = BuyCurrency
+            THEN BuyCurrency
+        ELSE '0'
+    END AS CurrencyPairBaseCurrency,
 
+    /* ============================
+       CurrencyPairQuoteCurrency Logic
+       ============================
+       If first part of exchangeRateQuoteBasis = buyCurrency
+         → 0
+       Else
+         → sellCurrency
+    */
+    CASE
+        WHEN LEFT(ExchangeRateQuoteBasis,
+                  CHARINDEX('/', ExchangeRateQuoteBasis + '/') - 1)
+             = BuyCurrency
+            THEN '0'
+        ELSE SellCurrency
+    END AS CurrencyPairQuoteCurrency,
 
+    /* ============================
+       NotionalBase Logic
+       ============================
+       If first part = buyCurrency
+         → buyCurrencyAmount
+       Else
+         → sellCurrencyAmount * -1
+    */
+    CASE
+        WHEN LEFT(ExchangeRateQuoteBasis,
+                  CHARINDEX('/', ExchangeRateQuoteBasis + '/') - 1)
+             = BuyCurrency
+            THEN BuyCurrencyAmount
+        ELSE SellCurrencyAmount * -1
+    END AS NotionalBase,
 
-{
-  "application": "transition",
-  "stream": "etl",
-  "type": "pipeline",
-  "id": "transition_staging_to_final_pipeline",
-  "map": {
-    "classname": "com.tds.coalesce.commons.pipeline.Pipeline",
-    "interface_engine": {
-      "classname": "com.tds.coalesce.commons.pipeline.engine.PipelineEngineBase",
-      "interface_lock": {
-        "classname": "com.tds.coalesce.commons.pipeline.lock.PipelineNonLocking"
-      }
-    },
-    "pipeline": [
-      {
-        "pipe_id": "transition_staging_read_pipe"
-      },
-      {
-        "pipe_id": "transition_final_insert_pipe"
-      }
-    ]
-  }
-}
+    -- Direct mappings
+    ExchangeRate AS Price,
+    FinalContractualSettlementDate AS SettlementDate,
 
+    -- Placeholder (18th column)
+    TradeStatus
 
-
-
-transition_staging_to_final_pipeline
-
-
-
-{
-  "application": "transition",
-  "stream": "etl",
-  "type": "endpoint",
-  "id": "transition_staging_to_final_endpoint",
-  "map": {
-    "classname": "com.tds.coalesce.commons.service.spring.rest.endpoint.adapter.RESTEndpointAdapter",
-    "url": "/transition/process",
-    "methods_http": [
-      "POST"
-    ],
-
-    "handler_request": [],
-
-    "pipeline": "transition_staging_to_final_pipeline",
-    "pipeline_exception": "transition_staging_to_final_pipeline_exception",
-
-    "throw_pipeline_return": "true",
-
-    "handler_response": [
-      {
-        "classname": "com.tds.coalesce.commons.service.spring.rest.endpoint.response.RESTGenericResponseUsingJsonObject",
-        "id": "transition_success_response",
-        "context_model": "transition_pipeline_response_context"
-      }
-    ],
-
-    "handler_error": {
-      "classname": "com.tds.coalesce.commons.service.spring.rest.endpoint.response.RESTResponseErrorUsingJsonObject",
-      "json_template": {
-        "classname": "com.tds.coalesce.commons.connectors.http.pipe.response.TemplateStringEncodedHelper",
-        "template_string_encoded": "encodeBase64File(data/transition/transition_error_response_template.json)"
-      },
-      "context_json": "transition_pipeline_error_context"
-    }
-  }
-}
-
-
-
-
-
+FROM STG.SURV_FXSPOT_TRADE;
