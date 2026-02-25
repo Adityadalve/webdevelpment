@@ -1,119 +1,104 @@
-DROP TABLE IF EXISTS STG.SURV_FXSPOT_TRADE;
-GO
+DECLARE @json NVARCHAR(MAX) = ?;  -- full JSON payload
 
-CREATE TABLE STG.SURV_FXSPOT_TRADE
+INSERT INTO STG.SURV_FXSPOT_TRADE
 (
-    -- =========================
-    -- Core Trade Dates
-    -- =========================
-    tradeExecutionDateTime      DATETIME2 NULL,
-    effectiveDate               DATE       NULL,
-    tradeDate                   DATE       NULL,
-
-    -- =========================
-    -- Source Attributes (JSON)
-    -- =========================
-    sourceAttributes            NVARCHAR(MAX) NULL,
-
-    -- =========================
-    -- Enrichments & Events (JSON)
-    -- =========================
-    enrichments                 NVARCHAR(MAX) NULL,
-    tradeEvents                 NVARCHAR(MAX) NULL,
-
-    -- =========================
-    -- Product & Relationships (JSON)
-    -- =========================
-    product                     NVARCHAR(MAX) NULL,
-    tradeRelationships          NVARCHAR(MAX) NULL,
-
-    -- =========================
-    -- Execution & Platform
-    -- =========================
-    executionVenueMic           VARCHAR(100)  NULL,
-    tradeExecutionVenueType     VARCHAR(100)  NULL,
-    tradeExecutionMethod        VARCHAR(100)  NULL,
-    tradingPlatformName         VARCHAR(100)  NULL,
-    tradingPlatformTradeId      VARCHAR(100)  NULL,
-
-    -- =========================
-    -- Pricing & Package
-    -- =========================
-    packagePriceCurrency        VARCHAR(50)   NULL,
-    packagePriceNotation        VARCHAR(50)   NULL,
-    packagePrice                VARCHAR(50)   NULL,
-    packagePriceType            VARCHAR(50)   NULL,
-    packageSize                 VARCHAR(50)   NULL,
-    packageId                   VARCHAR(100)  NULL,
-    packageType                 VARCHAR(50)   NULL,
-
-    -- =========================
-    -- Fees (JSON Array)
-    -- =========================
-    fees                        NVARCHAR(MAX) NULL,
-
-    -- =========================
-    -- Broker / Counterparty
-    -- =========================
-    brokerId                    VARCHAR(100)  NULL,
-    counterpartyCode            VARCHAR(100)  NULL,
-
-    -- =========================
-    -- Sales & Trader
-    -- =========================
-    salesPersonAcf2             VARCHAR(100)  NULL,
-    traderAcf2                  VARCHAR(100)  NULL,
-    salesMarginAmount           VARCHAR(100)  NULL,
-    salesMarginCurrency         VARCHAR(50)   NULL,
-    salesRevenueAgreement       VARCHAR(100)  NULL,
-
-    -- =========================
-    -- Book & System
-    -- =========================
-    bookName                    VARCHAR(100)  NULL,
-    systemName                  VARCHAR(50)   NULL,
-    tradeExecutionSourceSystem  VARCHAR(50)   NULL,
-    tradeSettlementSourceSystem VARCHAR(50)   NULL,
-
-    -- =========================
-    -- Trade Identifiers
-    -- =========================
-    tradeId                     VARCHAR(100)  NULL,
-    tradeIdInternal             VARCHAR(100)  NULL,
-    tradeIdOriginal             VARCHAR(100)  NULL,
-    executionSystemTradeId      VARCHAR(100)  NULL,
-    preTradeSourceSystem        VARCHAR(50)   NULL,
-    preTradeSystemRecordID      VARCHAR(100)  NULL,
-
-    -- =========================
-    -- Allocation & Block Trade
-    -- =========================
-    inScopeForAllocation        VARCHAR(50)   NULL,
-    blockTradeState             VARCHAR(50)   NULL,
-
-    -- =========================
-    -- Cash Settlement
-    -- =========================
-    cashSettlementChannel       VARCHAR(50)   NULL,
-
-    -- =========================
-    -- Calculation
-    -- =========================
-    calculationAgent            VARCHAR(100)  NULL,
-
-    -- =========================
-    -- Control & Audit
-    -- =========================
-    intentToClear               BIT           NULL,
-    recordStatus                VARCHAR(50)   NULL,
-    recordInsertedTime          DATETIME2     NULL,
-    recordEffectiveTime         DATETIME2     NULL,
-    version                     INT           NULL,
-
-    -- =========================
-    -- Metadata
-    -- =========================
-    recordUuid                  VARCHAR(100)  NULL,
-    recordMetadata              NVARCHAR(MAX) NULL
-);
-GO
+    tradeExecutionDateTime,
+    sourceAttributes,
+    enrichments,
+    tradeEvents,
+    executionVenueMic,
+    product,
+    tradeRelationships,
+    recordInsertedTime,
+    recordEffectiveTime,
+    intentToClear,
+    recordStatus,
+    tradingPlatformName,
+    packagePriceCurrency,
+    packagePriceNotation,
+    packagePrice,
+    packagePriceType,
+    fees,
+    effectiveDate,
+    tradeDate,
+    brokerId,
+    tradeExecutionVenueType,
+    tradeExecutionMethod,
+    tradingPlatformTradeId,
+    inScopeForAllocation,
+    packageSize,
+    salesPersonAcf2,
+    executionSystemTradeId,
+    counterpartyCode,
+    traderAcf2,
+    bookName,
+    version,
+    systemName,
+    tradeExecutionSourceSystem,
+    tradeSettlementSourceSystem,
+    tradeId,
+    calculationAgent,
+    preTradeSourceSystem,
+    preTradeSystemRecordID,
+    tradeIdInternal,
+    packageId,
+    blockTradeState,
+    packageType,
+    cashSettlementChannel,
+    salesMarginAmount,
+    salesMarginCurrency,
+    salesRevenueAgreement,
+    tradeIdOriginal,
+    recordUuid,
+    recordMetadata
+)
+SELECT
+    JSON_VALUE(@json,'$.tradeExecutionDateTime'),
+    JSON_QUERY(@json,'$.sourceAttributes'),
+    JSON_QUERY(@json,'$.enrichments'),
+    JSON_QUERY(@json,'$.tradeEvents'),
+    JSON_VALUE(@json,'$.executionVenueMic'),
+    JSON_QUERY(@json,'$.product'),
+    JSON_QUERY(@json,'$.tradeRelationships'),
+    JSON_VALUE(@json,'$.recordInsertedTime'),
+    JSON_VALUE(@json,'$.recordEffectiveTime'),
+    CASE JSON_VALUE(@json,'$.intentToClear') WHEN 'true' THEN 1 ELSE 0 END,
+    JSON_VALUE(@json,'$.recordStatus'),
+    JSON_VALUE(@json,'$.tradingPlatformName'),
+    JSON_VALUE(@json,'$.packagePriceCurrency'),
+    JSON_VALUE(@json,'$.packagePriceNotation'),
+    JSON_VALUE(@json,'$.packagePrice'),
+    JSON_VALUE(@json,'$.packagePriceType'),
+    JSON_QUERY(@json,'$.fees'),
+    JSON_VALUE(@json,'$.effectiveDate'),
+    JSON_VALUE(@json,'$.tradeDate'),
+    JSON_VALUE(@json,'$.brokerId'),
+    JSON_VALUE(@json,'$.tradeExecutionVenueType'),
+    JSON_VALUE(@json,'$.tradeExecutionMethod'),
+    JSON_VALUE(@json,'$.tradingPlatformTradeId'),
+    JSON_VALUE(@json,'$.inScopeForAllocation'),
+    JSON_VALUE(@json,'$.packageSize'),
+    JSON_VALUE(@json,'$.salesPersonAcf2'),
+    JSON_VALUE(@json,'$.executionSystemTradeId'),
+    JSON_VALUE(@json,'$.counterpartyCode'),
+    JSON_VALUE(@json,'$.traderAcf2'),
+    JSON_VALUE(@json,'$.bookName'),
+    JSON_VALUE(@json,'$.version'),
+    JSON_VALUE(@json,'$.systemName'),
+    JSON_VALUE(@json,'$.tradeExecutionSourceSystem'),
+    JSON_VALUE(@json,'$.tradeSettlementSourceSystem'),
+    JSON_VALUE(@json,'$.tradeId'),
+    JSON_VALUE(@json,'$.calculationAgent'),
+    JSON_VALUE(@json,'$.preTradeSourceSystem'),
+    JSON_VALUE(@json,'$.preTradeSystemRecordID'),
+    JSON_VALUE(@json,'$.tradeIdInternal'),
+    JSON_VALUE(@json,'$.packageId'),
+    JSON_VALUE(@json,'$.blockTradeState'),
+    JSON_VALUE(@json,'$.packageType'),
+    JSON_VALUE(@json,'$.cashSettlementChannel'),
+    JSON_VALUE(@json,'$.salesMarginAmount'),
+    JSON_VALUE(@json,'$.salesMarginCurrency'),
+    JSON_VALUE(@json,'$.salesRevenueAgreement'),
+    JSON_VALUE(@json,'$.tradeIdOriginal'),
+    JSON_VALUE(@json,'$.recordUuid'),
+    JSON_QUERY(@json,'$.recordMetadata');
