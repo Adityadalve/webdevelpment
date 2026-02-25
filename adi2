@@ -1,100 +1,119 @@
-SELECT
-    -- Direct mappings
-    UnitBookName,
-    CounterpartyCode,
-    ProductType,
-    SalesPersonID,
-    SourceSystem,
+DROP TABLE IF EXISTS STG.SURV_FXSPOT_TRADE;
+GO
 
-    /* ============================
-       TradeDate Logic
-       ============================
-       If eventType = '1.1 Inception:NewTrade'
-         → use tradeExecutionDateTime if present
-         → else recordEffectiveTime
-       Else
-         → recordEffectiveTime
-    */
-    CASE
-        WHEN EventType = '1.1 Inception:NewTrade'
-             AND TradeExecutionDateTime IS NOT NULL
-            THEN TradeExecutionDateTime
-        ELSE RecordEffectiveTime
-    END AS TradeDate,
+CREATE TABLE STG.SURV_FXSPOT_TRADE
+(
+    -- =========================
+    -- Core Trade Dates
+    -- =========================
+    tradeExecutionDateTime      DATETIME2 NULL,
+    effectiveDate               DATE       NULL,
+    tradeDate                   DATE       NULL,
 
-    TradeID,
-    TraderID,
-    PackageID,
+    -- =========================
+    -- Source Attributes (JSON)
+    -- =========================
+    sourceAttributes            NVARCHAR(MAX) NULL,
 
-    -- Message / Event
-    MessageType,
-    EventType,
+    -- =========================
+    -- Enrichments & Events (JSON)
+    -- =========================
+    enrichments                 NVARCHAR(MAX) NULL,
+    tradeEvents                 NVARCHAR(MAX) NULL,
 
-    /* ============================
-       AssetClass Logic
-       ============================
-       productType = 'FX_Spot'
-       → 'Foreign Exchange (FX)'
-    */
-    CASE
-        WHEN ProductType = 'FX_Spot'
-            THEN 'Foreign Exchange (FX)'
-        ELSE ProductType
-    END AS AssetClass,
+    -- =========================
+    -- Product & Relationships (JSON)
+    -- =========================
+    product                     NVARCHAR(MAX) NULL,
+    tradeRelationships          NVARCHAR(MAX) NULL,
 
-    /* ============================
-       CurrencyPairBaseCurrency Logic
-       ============================
-       If first part of exchangeRateQuoteBasis = buyCurrency
-         → buyCurrency
-       Else
-         → 0
-    */
-    CASE
-        WHEN LEFT(ExchangeRateQuoteBasis,
-                  CHARINDEX('/', ExchangeRateQuoteBasis + '/') - 1)
-             = BuyCurrency
-            THEN BuyCurrency
-        ELSE '0'
-    END AS CurrencyPairBaseCurrency,
+    -- =========================
+    -- Execution & Platform
+    -- =========================
+    executionVenueMic           VARCHAR(100)  NULL,
+    tradeExecutionVenueType     VARCHAR(100)  NULL,
+    tradeExecutionMethod        VARCHAR(100)  NULL,
+    tradingPlatformName         VARCHAR(100)  NULL,
+    tradingPlatformTradeId      VARCHAR(100)  NULL,
 
-    /* ============================
-       CurrencyPairQuoteCurrency Logic
-       ============================
-       If first part of exchangeRateQuoteBasis = buyCurrency
-         → 0
-       Else
-         → sellCurrency
-    */
-    CASE
-        WHEN LEFT(ExchangeRateQuoteBasis,
-                  CHARINDEX('/', ExchangeRateQuoteBasis + '/') - 1)
-             = BuyCurrency
-            THEN '0'
-        ELSE SellCurrency
-    END AS CurrencyPairQuoteCurrency,
+    -- =========================
+    -- Pricing & Package
+    -- =========================
+    packagePriceCurrency        VARCHAR(50)   NULL,
+    packagePriceNotation        VARCHAR(50)   NULL,
+    packagePrice                VARCHAR(50)   NULL,
+    packagePriceType            VARCHAR(50)   NULL,
+    packageSize                 VARCHAR(50)   NULL,
+    packageId                   VARCHAR(100)  NULL,
+    packageType                 VARCHAR(50)   NULL,
 
-    /* ============================
-       NotionalBase Logic
-       ============================
-       If first part = buyCurrency
-         → buyCurrencyAmount
-       Else
-         → sellCurrencyAmount * -1
-    */
-    CASE
-        WHEN LEFT(ExchangeRateQuoteBasis,
-                  CHARINDEX('/', ExchangeRateQuoteBasis + '/') - 1)
-             = BuyCurrency
-            THEN BuyCurrencyAmount
-        ELSE SellCurrencyAmount * -1
-    END AS NotionalBase,
+    -- =========================
+    -- Fees (JSON Array)
+    -- =========================
+    fees                        NVARCHAR(MAX) NULL,
 
-    -- Direct mappings
-    ExchangeRate AS Price,
-    FinalContractualSettlementDate AS SettlementDate,
+    -- =========================
+    -- Broker / Counterparty
+    -- =========================
+    brokerId                    VARCHAR(100)  NULL,
+    counterpartyCode            VARCHAR(100)  NULL,
 
-    -- Placeholder (18th column)
-    TradeStatus
+    -- =========================
+    -- Sales & Trader
+    -- =========================
+    salesPersonAcf2             VARCHAR(100)  NULL,
+    traderAcf2                  VARCHAR(100)  NULL,
+    salesMarginAmount           VARCHAR(100)  NULL,
+    salesMarginCurrency         VARCHAR(50)   NULL,
+    salesRevenueAgreement       VARCHAR(100)  NULL,
 
-FROM STG.SURV_FXSPOT_TRADE;
+    -- =========================
+    -- Book & System
+    -- =========================
+    bookName                    VARCHAR(100)  NULL,
+    systemName                  VARCHAR(50)   NULL,
+    tradeExecutionSourceSystem  VARCHAR(50)   NULL,
+    tradeSettlementSourceSystem VARCHAR(50)   NULL,
+
+    -- =========================
+    -- Trade Identifiers
+    -- =========================
+    tradeId                     VARCHAR(100)  NULL,
+    tradeIdInternal             VARCHAR(100)  NULL,
+    tradeIdOriginal             VARCHAR(100)  NULL,
+    executionSystemTradeId      VARCHAR(100)  NULL,
+    preTradeSourceSystem        VARCHAR(50)   NULL,
+    preTradeSystemRecordID      VARCHAR(100)  NULL,
+
+    -- =========================
+    -- Allocation & Block Trade
+    -- =========================
+    inScopeForAllocation        VARCHAR(50)   NULL,
+    blockTradeState             VARCHAR(50)   NULL,
+
+    -- =========================
+    -- Cash Settlement
+    -- =========================
+    cashSettlementChannel       VARCHAR(50)   NULL,
+
+    -- =========================
+    -- Calculation
+    -- =========================
+    calculationAgent            VARCHAR(100)  NULL,
+
+    -- =========================
+    -- Control & Audit
+    -- =========================
+    intentToClear               BIT           NULL,
+    recordStatus                VARCHAR(50)   NULL,
+    recordInsertedTime          DATETIME2     NULL,
+    recordEffectiveTime         DATETIME2     NULL,
+    version                     INT           NULL,
+
+    -- =========================
+    -- Metadata
+    -- =========================
+    recordUuid                  VARCHAR(100)  NULL,
+    recordMetadata              NVARCHAR(MAX) NULL
+);
+GO
