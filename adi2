@@ -1,4 +1,76 @@
-=SUBSTITUTE(MID(A1,FIND("v1.""",A1)+4,LEN(A1)),"_","")
+<dependency>
+    <groupId>com.databricks</groupId>
+    <artifactId>databricks-dbutils-scala_2.12</artifactId>
+    <version>0.1.4</version>
+</dependency>
 
 
-=MID(A1,FIND("v1.""",A1)+4,LEN(A1))
+2. Java Code
+When using the Scala bridge, you use com.databricks.sdk.scala.dbutils.DBUtils
+
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
+// This is the Scala-bridge import used in Java
+import com.databricks.sdk.scala.dbutils.DBUtils;
+
+public class JavaWithScalaBridge {
+
+    public static void main(String[] args) {
+
+        SparkSession spark = SparkSession.builder().getOrCreate();
+
+        // Access secrets via the Scala-bridge utility
+        // This is concise and works perfectly in Java
+        String scope = "my-akv-scope";
+
+        String username = DBUtils.getDBUtils().secrets().get(scope, "db-user");
+        String password = DBUtils.getDBUtils().secrets().get(scope, "db-pass");
+
+        // Use the secrets in Spark JDBC
+        Dataset<Row> df = spark.read()
+                .format("jdbc")
+                .option("url", "jdbc:postgresql://hostname:5432/db")
+                .option("user", username)
+                .option("password", password)
+                .option("dbtable", "sales_data")
+                .load();
+
+        df.show();
+    }
+}
+
+
+String jdbcUrl = "jdbc:postgresql://<host>:<port>/<database>";
+
+// Replace with your actual URL
+String dbTable = "<table-name>";
+
+// Replace with your actual table name
+String dbUser = "<username>";
+
+// Replace with your actual username
+String dbPassword = "<password>";
+
+// Replace with your actual password
+String driverClass = "org.postgresql.Driver";
+
+// Replace with your actual driver class
+
+// Read data from JDBC source into a DataFrame
+Dataset<Row> jdbcDF = spark.read()
+        .format("jdbc")
+        .option("url", jdbcUrl)
+        .option("dbtable", dbTable)
+        .option("user", dbUser)
+        .option("password", dbPassword)
+        .option("driver", driverClass)
+        .load();
+
+// Show the data (for demonstration)
+jdbcDF.show();
+
+// Further Spark processing...
+
+// Stop the Spark session when done
+spark.stop();
