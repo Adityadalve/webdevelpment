@@ -1,7 +1,5 @@
-SELECT
-    s.name AS schema_name,
-    t.name AS table_name
-FROM sys.tables t
-JOIN sys.schemas s
-    ON t.schema_id = s.schema_id
-WHERE t.name LIKE 'transaction%';
+AC1: Quantify total null response count per API endpoint
+AC2: Compare null responses against successful responses for each endpoint
+AC3: Generate consolidated report of APIs with null response occurrences
+AC4: Detect patterns or repeated null responses from specific endpoints
+AC5: Validate data integrity for APIs returning partial/null responses
