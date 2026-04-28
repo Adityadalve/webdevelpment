@@ -1,5 +1,22 @@
-AC1: Quantify total null response count per API endpoint
-AC2: Compare null responses against successful responses for each endpoint
-AC3: Generate consolidated report of APIs with null response occurrences
-AC4: Detect patterns or repeated null responses from specific endpoints
-AC5: Validate data integrity for APIs returning partial/null responses
+Infer from Databricks URL
+Inside your Spark job you can try:
+Java
+String workspaceUrl = spark.conf().get("spark.databricks.workspaceUrl");
+System.out.println("Workspace URL: " + workspaceUrl);
+Then map:
+Java
+if (workspaceUrl.contains("dev")) {
+    env = "dev";
+} else if (workspaceUrl.contains("prod")) {
+    env = "prod";
+}
+👉 Problem:
+URL may not contain dev/prod
+Naming can change
+Breaks easily across regions / accounts
+
+
+Use Workspace Name via Tags (Indirect)
+If your infra team has tagged workspaces in Azure:
+You cannot directly read Azure tags inside Spark easily
+Requires extra API calls (complex + not worth it)
